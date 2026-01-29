@@ -253,15 +253,17 @@ callbacks_list = create_callbacks(
 )
 
 # Train model
-callbacks_list = [early_stop, checkpoint, reduce_lr]
+def train_model(model, train_data, val_data, epochs, callbacks, verbose=1):
+    """Train the model."""
+    return model.fit(
+        train_data,
+        validation_data=val_data,
+        epochs=epochs,
+        callbacks=callbacks,
+        verbose=verbose
+    )
 
-history = model.fit(
-    train_ds,
-    validation_data=val_ds,
-    epochs=EPOCHS,
-    callbacks=callbacks_list,
-    verbose=1
-)
+history = train_model(model, train_ds, val_ds, EPOCHS, callbacks_list)
 
 # Save model
 MODEL_PATH = "/content/drive/MyDrive/PlantVillage_CRNN_Model.keras"
