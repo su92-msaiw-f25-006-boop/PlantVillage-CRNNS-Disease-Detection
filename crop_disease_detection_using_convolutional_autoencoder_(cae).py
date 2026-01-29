@@ -50,20 +50,20 @@ LEARNING_RATE = 1e-4
 SEED = 42
 
 # Load datasets
-train_ds = image_dataset_from_directory(
-    TRAIN_DIR, image_size=IMG_SIZE, batch_size=BATCH_SIZE, 
-    label_mode='categorical', seed=SEED
-)
+def load_dataset(directory, image_size, batch_size, label_mode='categorical', seed=None, shuffle=True):
+    """Load image dataset from directory."""
+    return image_dataset_from_directory(
+        directory, 
+        image_size=image_size, 
+        batch_size=batch_size, 
+        label_mode=label_mode, 
+        seed=seed,
+        shuffle=shuffle
+    )
 
-val_ds = image_dataset_from_directory(
-    VAL_DIR, image_size=IMG_SIZE, batch_size=BATCH_SIZE, 
-    label_mode='categorical', seed=SEED
-)
-
-test_ds = image_dataset_from_directory(
-    TEST_DIR, image_size=IMG_SIZE, batch_size=BATCH_SIZE, 
-    label_mode='categorical', shuffle=False
-)
+train_ds = load_dataset(TRAIN_DIR, IMG_SIZE, BATCH_SIZE, seed=SEED)
+val_ds = load_dataset(VAL_DIR, IMG_SIZE, BATCH_SIZE, seed=SEED)
+test_ds = load_dataset(TEST_DIR, IMG_SIZE, BATCH_SIZE, shuffle=False)
 
 # Extract class information
 class_names = train_ds.class_names
