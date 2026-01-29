@@ -28,10 +28,19 @@ import warnings
 warnings.filterwarnings("ignore")
 
 # Configuration constants
+def get_dataset_paths(base_dir):
+    """Get train, validation, and test directory paths."""
+    return {
+        'train': os.path.join(base_dir, 'train'),
+        'val': os.path.join(base_dir, 'val'),
+        'test': os.path.join(base_dir, 'test')
+    }
+
 BASE_DIR = '/content/drive/MyDrive/PlantVillage_Splits'
-TRAIN_DIR = os.path.join(BASE_DIR, 'train')
-VAL_DIR = os.path.join(BASE_DIR, 'val')
-TEST_DIR = os.path.join(BASE_DIR, 'test')
+paths = get_dataset_paths(BASE_DIR)
+TRAIN_DIR = paths['train']
+VAL_DIR = paths['val']
+TEST_DIR = paths['test']
 
 # Hyperparameters
 IMG_SIZE = (128, 128)
