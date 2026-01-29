@@ -66,8 +66,13 @@ val_ds = load_dataset(VAL_DIR, IMG_SIZE, BATCH_SIZE, seed=SEED)
 test_ds = load_dataset(TEST_DIR, IMG_SIZE, BATCH_SIZE, shuffle=False)
 
 # Extract class information
-class_names = train_ds.class_names
-NUM_CLASSES = len(class_names)
+def get_class_info(dataset):
+    """Extract class names and count from dataset."""
+    class_names = dataset.class_names
+    num_classes = len(class_names)
+    return class_names, num_classes
+
+class_names, NUM_CLASSES = get_class_info(train_ds)
 print(f"Detected Classes: {class_names}")
 print(f"Total Classes: {NUM_CLASSES}")
 
