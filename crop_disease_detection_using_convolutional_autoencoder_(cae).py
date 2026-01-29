@@ -191,12 +191,15 @@ print(f"Test Loss: {test_loss:.4f}")
 print(f"Test Accuracy: {test_acc*100:.2f}%")
 
 # Generate predictions for confusion matrix
-y_true, y_pred = [], []
+def get_predictions(model, dataset):
+    y_true, y_pred = [], []
+    for batch_x, batch_y in dataset:
+        batch_preds = model.predict(batch_x, verbose=0)
+        y_true.extend(np.argmax(batch_y.numpy(), axis=1))
+        y_pred.extend(np.argmax(batch_preds, axis=1))
+    return y_true, y_pred
 
-for batch_x, batch_y in test_ds:
-    batch_preds = model.predict(batch_x, verbose=0)
-    y_true.extend(np.argmax(batch_y.numpy(), axis=1))
-    y_pred.extend(np.argmax(batch_preds, axis=1))
+y_true, y_pred = get_predictions(model, test_ds)
 
 # Generate and visualize confusion matrix
 cm = tf.math.confusion_matrix(y_true, y_pred)
