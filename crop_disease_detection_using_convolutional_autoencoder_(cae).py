@@ -162,7 +162,50 @@ x = Dense(DENSE_UNITS, activation='relu')(x)
 x = Dropout(DROPOUT_RATE)(x)
 outputs = Dense(NUM_CLASSES, activation='softmax')(x)
 
-model = Model(inputs, outputs)
+def build_model(input_shape, num_classes, gru_units=256, dense_units=256, dropout_rate=0.5):
+    """Build CRNN model architecture."""
+    inputs = Input(shape=input_shape)
+    
+    # CNN Feature Extraction
+    FILTERS_1 = 32
+    FILTERS_2 = 64
+    FILTERS_3 = 128
+    FILTERS_4 = 256
+    KERNEL_SIZE = 3
+    POOL_SIZE = 2
+    
+    x = Conv2D(FILTERS_1, KERNEL_SIZE, activation='relu', padding='same')(inputs)
+    x = BatchNormalization()(x)
+    x = MaxPooling2D(POOL_SIZE)(x)
+    
+    x = Conv2D(FILTERS_2, KERNEL_SIZE, activation='relu', padding='same')(x)
+    x = BatchNormalization()(x)
+    x = MaxPooling2D(POOL_SIZE)(x)
+    
+    x = Conv2D(FILTERS_3, KERNEL_SIZE, activation='relu', padding='same')(x)
+    x = BatchNormalization()(x)
+    x = MaxPooling2D(POOL_SIZE)(x)
+    
+    x = Conv2D(FILTERS_4, KERNEL_SIZE, activation='relu', padding='same')(x)
+    x = BatchNormalization()(x)
+    x = MaxPooling2D(POOL_SIZE)(x)
+    
+    # Reshape for RNN
+    TIMESTEPS = 8
+    FEATURE_DIM = calculate_feature_dim(8, 8, FILTERS_4)
+    x = Reshape((TIMESTEPS, FEATURE_DIM))(x)
+    
+    # RNN Layer
+    x = GRU(gru_units, return_sequences=False)(x)
+    
+    # Classifier
+    x = Dense(dense_units, activation='relu')(x)
+    x = Dropout(dropout_rate)(x)
+    outputs = Dense(num_classes, activation='softmax')(x)
+    
+    return Model(inputs, outputs)
+
+model = build_model(INPUT_SHAPE, NUM_CLASSES, GRU_UNITS, DENSE_UNITS, DROPOUT_RATE)
 
 # Compile model
 optimizer = Adam(learning_rate=LEARNING_RATE)
