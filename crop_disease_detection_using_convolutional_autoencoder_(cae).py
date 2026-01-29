@@ -340,8 +340,13 @@ pred_config = get_prediction_config(PREDICTION_MODEL_PATH, IMAGE_PATH, PREDICTIO
 # =============================
 # LOAD MODEL
 # =============================
-prediction_model = tf.keras.models.load_model(PREDICTION_MODEL_PATH)
-print(f"Model loaded successfully from {PREDICTION_MODEL_PATH}")
+def load_model_for_prediction(model_path):
+    """Load model for prediction."""
+    model = tf.keras.models.load_model(model_path)
+    print(f"Model loaded successfully from {model_path}")
+    return model
+
+prediction_model = load_model_for_prediction(PREDICTION_MODEL_PATH)
 
 # =============================
 # LOAD CLASS NAMES (IMPORTANT)
