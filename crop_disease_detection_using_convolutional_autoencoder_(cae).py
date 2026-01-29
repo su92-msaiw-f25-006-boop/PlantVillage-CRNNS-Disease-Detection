@@ -221,25 +221,35 @@ model.compile(
 model.summary()
 
 # Training callbacks configuration
+def create_callbacks(early_stop_patience=5, lr_factor=0.5, lr_patience=3, checkpoint_file='best_crnn_model.keras'):
+    """Create training callbacks."""
+    early_stop = EarlyStopping(
+        monitor='val_accuracy', 
+        patience=early_stop_patience, 
+        restore_best_weights=True
+    )
+    checkpoint = ModelCheckpoint(
+        checkpoint_file, 
+        monitor='val_accuracy', 
+        save_best_only=True
+    )
+    reduce_lr = ReduceLROnPlateau(
+        monitor='val_loss', 
+        factor=lr_factor, 
+        patience=lr_patience
+    )
+    return [early_stop, checkpoint, reduce_lr]
+
 EARLY_STOP_PATIENCE = 5
 LR_REDUCTION_FACTOR = 0.5
 LR_REDUCTION_PATIENCE = 3
 CHECKPOINT_FILENAME = 'best_crnn_model.keras'
 
-early_stop = EarlyStopping(
-    monitor='val_accuracy', 
-    patience=EARLY_STOP_PATIENCE, 
-    restore_best_weights=True
-)
-checkpoint = ModelCheckpoint(
-    CHECKPOINT_FILENAME, 
-    monitor='val_accuracy', 
-    save_best_only=True
-)
-reduce_lr = ReduceLROnPlateau(
-    monitor='val_loss', 
-    factor=LR_REDUCTION_FACTOR, 
-    patience=LR_REDUCTION_PATIENCE
+callbacks_list = create_callbacks(
+    EARLY_STOP_PATIENCE, 
+    LR_REDUCTION_FACTOR, 
+    LR_REDUCTION_PATIENCE, 
+    CHECKPOINT_FILENAME
 )
 
 # Train model
