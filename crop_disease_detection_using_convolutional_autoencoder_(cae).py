@@ -324,9 +324,18 @@ cm = plot_confusion_matrix(y_true, y_pred, class_names)
 # Note: This section is for inference on a single image
 # Remove duplicate imports if running in same session
 
+def get_prediction_config(model_path, image_path, img_size=(128, 128)):
+    """Get prediction configuration."""
+    return {
+        'model_path': model_path,
+        'image_path': image_path,
+        'img_size': img_size
+    }
+
 PREDICTION_MODEL_PATH = "/content/drive/MyDrive/PlantVillage_CRNN_Model.keras"
 IMAGE_PATH = "/content/drive/MyDrive/test_image/test3.png"
 PREDICTION_IMG_SIZE = (128, 128)
+pred_config = get_prediction_config(PREDICTION_MODEL_PATH, IMAGE_PATH, PREDICTION_IMG_SIZE)
 
 # =============================
 # LOAD MODEL
