@@ -256,13 +256,11 @@ status = get_disease_status(predicted_class)
 # =============================
 # SHOW RESULT
 # =============================
-plt.figure(figsize=(8, 8))
 plt.imshow(img)
 plt.axis("off")
-plt.title(f"{predicted_class}\n{status} ({confidence:.2f}%)", fontsize=12)
-plt.tight_layout()
+plt.title(f"{predicted_class}\n{status} ({confidence:.2f}%)")
 plt.show()
 
-print(f"Predicted Class: {predicted_class}")
-print(f"Status: {status}")
-print(f"Confidence: {confidence:.2f}%")
+print("Predicted Class :", predicted_class)
+print("Status          :", status)
+print(f"Confidence      : {confidence:.2f}%")
