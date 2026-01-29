@@ -369,11 +369,17 @@ img, img_arr = preprocess_image(IMAGE_PATH, PREDICTION_IMG_SIZE)
 # =============================
 # PREDICTION
 # =============================
-pred = prediction_model.predict(img_arr, verbose=0)
-idx = np.argmax(pred[0])
+def predict_image(model, img_array, class_names, verbose=0):
+    """Predict class for image array."""
+    pred = model.predict(img_array, verbose=verbose)
+    idx = np.argmax(pred[0])
+    predicted_class = class_names[idx]
+    confidence = np.max(pred[0]) * 100
+    return predicted_class, confidence, idx
 
-predicted_class = prediction_class_names[idx]
-confidence = np.max(pred[0]) * 100
+predicted_class, confidence, idx = predict_image(
+    prediction_model, img_arr, prediction_class_names
+)
 
 def get_disease_status(class_name):
     """Determine if plant is healthy or diseased based on class name."""
