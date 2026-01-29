@@ -202,23 +202,26 @@ def get_predictions(model, dataset):
 y_true, y_pred = get_predictions(model, test_ds)
 
 # Generate and visualize confusion matrix
-cm = tf.math.confusion_matrix(y_true, y_pred)
+def plot_confusion_matrix(y_true, y_pred, class_names, title="Confusion Matrix"):
+    cm = tf.math.confusion_matrix(y_true, y_pred)
+    FIG_SIZE = (12, 10)
+    plt.figure(figsize=FIG_SIZE)
+    sns.heatmap(
+        cm, 
+        xticklabels=class_names, 
+        yticklabels=class_names, 
+        cmap="Blues",
+        annot=True,
+        fmt='d'
+    )
+    plt.title(f"{title} - Plant Disease Classification")
+    plt.xlabel("Predicted")
+    plt.ylabel("Actual")
+    plt.tight_layout()
+    plt.show()
+    return cm
 
-FIG_SIZE = (12, 10)
-plt.figure(figsize=FIG_SIZE)
-sns.heatmap(
-    cm, 
-    xticklabels=class_names, 
-    yticklabels=class_names, 
-    cmap="Blues",
-    annot=True,
-    fmt='d'
-)
-plt.title("Confusion Matrix - Plant Disease Classification")
-plt.xlabel("Predicted")
-plt.ylabel("Actual")
-plt.tight_layout()
-plt.show()
+cm = plot_confusion_matrix(y_true, y_pred, class_names)
 
 # =============================
 # SINGLE IMAGE PREDICTION SECTION
