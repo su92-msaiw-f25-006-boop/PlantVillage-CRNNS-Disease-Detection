@@ -105,9 +105,13 @@ train_ds = train_ds.map(lambda x, y: (data_augmentation(x), y))
 val_ds = val_ds.map(normalize_image)
 test_ds = test_ds.map(normalize_image)
 
-train_ds = train_ds.prefetch(tf.data.AUTOTUNE)
-val_ds   = val_ds.prefetch(tf.data.AUTOTUNE)
-test_ds  = test_ds.prefetch(tf.data.AUTOTUNE)
+def optimize_dataset(dataset):
+    """Optimize dataset with prefetching."""
+    return dataset.prefetch(tf.data.AUTOTUNE)
+
+train_ds = optimize_dataset(train_ds)
+val_ds = optimize_dataset(val_ds)
+test_ds = optimize_dataset(test_ds)
 
 inputs = Input(shape=(128, 128, 3))
 
