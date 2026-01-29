@@ -77,19 +77,25 @@ print(f"Detected Classes: {class_names}")
 print(f"Total Classes: {NUM_CLASSES}")
 
 # Data augmentation configuration
+def create_augmentation_pipeline(rotation=0.2, zoom=0.2, contrast=0.2, translation=0.1):
+    """Create data augmentation pipeline."""
+    return tf.keras.Sequential([
+        tf.keras.layers.Rescaling(1./255),
+        tf.keras.layers.RandomFlip("horizontal"),
+        tf.keras.layers.RandomRotation(rotation),
+        tf.keras.layers.RandomZoom(zoom),
+        tf.keras.layers.RandomContrast(contrast),
+        tf.keras.layers.RandomTranslation(translation, translation)
+    ])
+
 ROTATION_FACTOR = 0.2
 ZOOM_FACTOR = 0.2
 CONTRAST_FACTOR = 0.2
 TRANSLATION_FACTOR = 0.1
 
-data_augmentation = tf.keras.Sequential([
-    tf.keras.layers.Rescaling(1./255),
-    tf.keras.layers.RandomFlip("horizontal"),
-    tf.keras.layers.RandomRotation(ROTATION_FACTOR),
-    tf.keras.layers.RandomZoom(ZOOM_FACTOR),
-    tf.keras.layers.RandomContrast(CONTRAST_FACTOR),
-    tf.keras.layers.RandomTranslation(TRANSLATION_FACTOR, TRANSLATION_FACTOR)
-])
+data_augmentation = create_augmentation_pipeline(
+    ROTATION_FACTOR, ZOOM_FACTOR, CONTRAST_FACTOR, TRANSLATION_FACTOR
+)
 
 # Apply preprocessing
 def normalize_image(x, y):
