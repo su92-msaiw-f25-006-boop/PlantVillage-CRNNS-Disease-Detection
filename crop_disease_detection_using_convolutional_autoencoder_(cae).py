@@ -276,9 +276,14 @@ MODEL_PATH = "/content/drive/MyDrive/PlantVillage_CRNN_Model.keras"
 save_model(model, MODEL_PATH)
 
 # Evaluate model
-test_loss, test_acc = model.evaluate(test_ds, verbose=1)
-print(f"Test Loss: {test_loss:.4f}")
-print(f"Test Accuracy: {test_acc*100:.2f}%")
+def evaluate_model(model, test_data, verbose=1):
+    """Evaluate model on test data."""
+    test_loss, test_acc = model.evaluate(test_data, verbose=verbose)
+    print(f"Test Loss: {test_loss:.4f}")
+    print(f"Test Accuracy: {test_acc*100:.2f}%")
+    return test_loss, test_acc
+
+test_loss, test_acc = evaluate_model(model, test_ds)
 
 # Generate predictions for confusion matrix
 def get_predictions(model, dataset):
