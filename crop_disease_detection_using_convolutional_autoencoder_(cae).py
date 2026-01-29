@@ -13,7 +13,7 @@ drive.mount('/content/drive')
 import tensorflow as tf
 from tensorflow.keras.layers import (
     Conv2D, MaxPooling2D, Dense, Dropout,
-    BatchNormalization, Input, GRU, Reshape
+    Flatten, BatchNormalization, Input, LSTM, GRU, TimeDistributed
 )
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
@@ -27,392 +27,183 @@ import seaborn as sns
 import warnings
 warnings.filterwarnings("ignore")
 
-# Configuration constants
-def get_dataset_paths(base_dir):
-    """Get train, validation, and test directory paths."""
-    return {
-        'train': os.path.join(base_dir, 'train'),
-        'val': os.path.join(base_dir, 'val'),
-        'test': os.path.join(base_dir, 'test')
-    }
-
 BASE_DIR = '/content/drive/MyDrive/PlantVillage_Splits'
-paths = get_dataset_paths(BASE_DIR)
-TRAIN_DIR = paths['train']
-VAL_DIR = paths['val']
-TEST_DIR = paths['test']
 
-# Hyperparameters
+TRAIN_DIR = os.path.join(BASE_DIR, 'train')
+VAL_DIR   = os.path.join(BASE_DIR, 'val')
+TEST_DIR  = os.path.join(BASE_DIR, 'test')
+
 IMG_SIZE = (128, 128)
 BATCH_SIZE = 32
 EPOCHS = 20
 LEARNING_RATE = 1e-4
-SEED = 42
 
-# Load datasets
-def load_dataset(directory, image_size, batch_size, label_mode='categorical', seed=None, shuffle=True):
-    """Load image dataset from directory."""
-    return image_dataset_from_directory(
-        directory, 
-        image_size=image_size, 
-        batch_size=batch_size, 
-        label_mode=label_mode, 
-        seed=seed,
-        shuffle=shuffle
-    )
-
-train_ds = load_dataset(TRAIN_DIR, IMG_SIZE, BATCH_SIZE, seed=SEED)
-val_ds = load_dataset(VAL_DIR, IMG_SIZE, BATCH_SIZE, seed=SEED)
-test_ds = load_dataset(TEST_DIR, IMG_SIZE, BATCH_SIZE, shuffle=False)
-
-# Extract class information
-def get_class_info(dataset):
-    """Extract class names and count from dataset."""
-    class_names = dataset.class_names
-    num_classes = len(class_names)
-    return class_names, num_classes
-
-class_names, NUM_CLASSES = get_class_info(train_ds)
-print(f"Detected Classes: {class_names}")
-print(f"Total Classes: {NUM_CLASSES}")
-
-# Data augmentation configuration
-def create_augmentation_pipeline(rotation=0.2, zoom=0.2, contrast=0.2, translation=0.1):
-    """Create data augmentation pipeline."""
-    return tf.keras.Sequential([
-        tf.keras.layers.Rescaling(1./255),
-        tf.keras.layers.RandomFlip("horizontal"),
-        tf.keras.layers.RandomRotation(rotation),
-        tf.keras.layers.RandomZoom(zoom),
-        tf.keras.layers.RandomContrast(contrast),
-        tf.keras.layers.RandomTranslation(translation, translation)
-    ])
-
-ROTATION_FACTOR = 0.2
-ZOOM_FACTOR = 0.2
-CONTRAST_FACTOR = 0.2
-TRANSLATION_FACTOR = 0.1
-
-data_augmentation = create_augmentation_pipeline(
-    ROTATION_FACTOR, ZOOM_FACTOR, CONTRAST_FACTOR, TRANSLATION_FACTOR
+train_ds = image_dataset_from_directory(
+    TRAIN_DIR, image_size=IMG_SIZE, batch_size=BATCH_SIZE, label_mode='categorical', seed=42
 )
 
-# Apply preprocessing
-def normalize_image(x, y):
-    return x / 255.0, y
+val_ds = image_dataset_from_directory(
+    VAL_DIR, image_size=IMG_SIZE, batch_size=BATCH_SIZE, label_mode='categorical', seed=42
+)
+
+test_ds = image_dataset_from_directory(
+    TEST_DIR, image_size=IMG_SIZE, batch_size=BATCH_SIZE, label_mode='categorical', shuffle=False
+)
+
+class_names = train_ds.class_names
+NUM_CLASSES = len(class_names)
+print("Detected Classes:", class_names)
+print("Total Classes:", NUM_CLASSES)
+
+data_augmentation = tf.keras.Sequential([
+    tf.keras.layers.Rescaling(1./255),
+    tf.keras.layers.RandomFlip("horizontal"),
+    tf.keras.layers.RandomRotation(0.2),
+    tf.keras.layers.RandomZoom(0.2),
+    tf.keras.layers.RandomContrast(0.2),
+    tf.keras.layers.RandomTranslation(0.1, 0.1)
+])
 
 train_ds = train_ds.map(lambda x, y: (data_augmentation(x), y))
-val_ds = val_ds.map(normalize_image)
-test_ds = test_ds.map(normalize_image)
+val_ds   = val_ds.map(lambda x, y: (x / 255.0, y))
+test_ds  = test_ds.map(lambda x, y: (x / 255.0, y))
 
-def optimize_dataset(dataset):
-    """Optimize dataset with prefetching."""
-    return dataset.prefetch(tf.data.AUTOTUNE)
+train_ds = train_ds.prefetch(tf.data.AUTOTUNE)
+val_ds   = val_ds.prefetch(tf.data.AUTOTUNE)
+test_ds  = test_ds.prefetch(tf.data.AUTOTUNE)
 
-train_ds = optimize_dataset(train_ds)
-val_ds = optimize_dataset(val_ds)
-test_ds = optimize_dataset(test_ds)
-
-# Model input configuration
-INPUT_SHAPE = (128, 128, 3)
-inputs = Input(shape=INPUT_SHAPE)
+inputs = Input(shape=(128, 128, 3))
 
 # CNN Feature Extraction
-# Define filter sizes as constants
-FILTERS_1 = 32
-FILTERS_2 = 64
-FILTERS_3 = 128
-FILTERS_4 = 256
-KERNEL_SIZE = 3
-POOL_SIZE = 2
-
-x = Conv2D(FILTERS_1, KERNEL_SIZE, activation='relu', padding='same')(inputs)
+x = Conv2D(32, 3, activation='relu', padding='same')(inputs)
 x = BatchNormalization()(x)
-x = MaxPooling2D(POOL_SIZE)(x)
+x = MaxPooling2D(2)(x)
 
-x = Conv2D(FILTERS_2, KERNEL_SIZE, activation='relu', padding='same')(x)
+x = Conv2D(64, 3, activation='relu', padding='same')(x)
 x = BatchNormalization()(x)
-x = MaxPooling2D(POOL_SIZE)(x)
+x = MaxPooling2D(2)(x)
 
-x = Conv2D(FILTERS_3, KERNEL_SIZE, activation='relu', padding='same')(x)
+x = Conv2D(128, 3, activation='relu', padding='same')(x)
 x = BatchNormalization()(x)
-x = MaxPooling2D(POOL_SIZE)(x)
+x = MaxPooling2D(2)(x)
 
-x = Conv2D(FILTERS_4, KERNEL_SIZE, activation='relu', padding='same')(x)
+x = Conv2D(256, 3, activation='relu', padding='same')(x)
 x = BatchNormalization()(x)
-x = MaxPooling2D(POOL_SIZE)(x)
+x = MaxPooling2D(2)(x)
 
 # Reshape for RNN: (batch_size, timesteps, features)
-def calculate_feature_dim(height, width, filters):
-    """Calculate feature dimension for reshape layer."""
-    return height * width * filters
-
-TIMESTEPS = 8
-FEATURE_DIM = calculate_feature_dim(8, 8, FILTERS_4)
-x = Reshape((TIMESTEPS, FEATURE_DIM))(x)
+# Here we treat rows of feature maps as timesteps
+x = tf.keras.layers.Reshape((8, 256*8))(x)  # (batch, timesteps=8, features=2048)
 
 # RNN Layer (GRU)
-GRU_UNITS = 256
-x = GRU(GRU_UNITS, return_sequences=False)(x)
+x = GRU(256, return_sequences=False)(x)  # final output
 
 # Dense Layers for classification
-DENSE_UNITS = 256
-DROPOUT_RATE = 0.5
-x = Dense(DENSE_UNITS, activation='relu')(x)
-x = Dropout(DROPOUT_RATE)(x)
+x = Dense(256, activation='relu')(x)
+x = Dropout(0.5)(x)
 outputs = Dense(NUM_CLASSES, activation='softmax')(x)
 
-def build_model(input_shape, num_classes, gru_units=256, dense_units=256, dropout_rate=0.5):
-    """Build CRNN model architecture."""
-    inputs = Input(shape=input_shape)
-    
-    # CNN Feature Extraction
-    FILTERS_1 = 32
-    FILTERS_2 = 64
-    FILTERS_3 = 128
-    FILTERS_4 = 256
-    KERNEL_SIZE = 3
-    POOL_SIZE = 2
-    
-    x = Conv2D(FILTERS_1, KERNEL_SIZE, activation='relu', padding='same')(inputs)
-    x = BatchNormalization()(x)
-    x = MaxPooling2D(POOL_SIZE)(x)
-    
-    x = Conv2D(FILTERS_2, KERNEL_SIZE, activation='relu', padding='same')(x)
-    x = BatchNormalization()(x)
-    x = MaxPooling2D(POOL_SIZE)(x)
-    
-    x = Conv2D(FILTERS_3, KERNEL_SIZE, activation='relu', padding='same')(x)
-    x = BatchNormalization()(x)
-    x = MaxPooling2D(POOL_SIZE)(x)
-    
-    x = Conv2D(FILTERS_4, KERNEL_SIZE, activation='relu', padding='same')(x)
-    x = BatchNormalization()(x)
-    x = MaxPooling2D(POOL_SIZE)(x)
-    
-    # Reshape for RNN
-    TIMESTEPS = 8
-    FEATURE_DIM = calculate_feature_dim(8, 8, FILTERS_4)
-    x = Reshape((TIMESTEPS, FEATURE_DIM))(x)
-    
-    # RNN Layer
-    x = GRU(gru_units, return_sequences=False)(x)
-    
-    # Classifier
-    x = Dense(dense_units, activation='relu')(x)
-    x = Dropout(dropout_rate)(x)
-    outputs = Dense(num_classes, activation='softmax')(x)
-    
-    return Model(inputs, outputs)
-
-model = build_model(INPUT_SHAPE, NUM_CLASSES, GRU_UNITS, DENSE_UNITS, DROPOUT_RATE)
-
-# Compile model
-optimizer = Adam(learning_rate=LEARNING_RATE)
-loss_function = 'categorical_crossentropy'
-metrics_list = ['accuracy']
+model = Model(inputs, outputs)
 
 model.compile(
-    optimizer=optimizer,
-    loss=loss_function,
-    metrics=metrics_list
+    optimizer=Adam(learning_rate=LEARNING_RATE),
+    loss='categorical_crossentropy',
+    metrics=['accuracy']
 )
 
 model.summary()
 
-# Training callbacks configuration
-def create_callbacks(early_stop_patience=5, lr_factor=0.5, lr_patience=3, checkpoint_file='best_crnn_model.keras'):
-    """Create training callbacks."""
-    early_stop = EarlyStopping(
-        monitor='val_accuracy', 
-        patience=early_stop_patience, 
-        restore_best_weights=True
-    )
-    checkpoint = ModelCheckpoint(
-        checkpoint_file, 
-        monitor='val_accuracy', 
-        save_best_only=True
-    )
-    reduce_lr = ReduceLROnPlateau(
-        monitor='val_loss', 
-        factor=lr_factor, 
-        patience=lr_patience
-    )
-    return [early_stop, checkpoint, reduce_lr]
+early_stop = EarlyStopping(monitor='val_accuracy', patience=5, restore_best_weights=True)
+checkpoint = ModelCheckpoint('best_crnn_model.keras', monitor='val_accuracy', save_best_only=True)
+reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=3)
 
-EARLY_STOP_PATIENCE = 5
-LR_REDUCTION_FACTOR = 0.5
-LR_REDUCTION_PATIENCE = 3
-CHECKPOINT_FILENAME = 'best_crnn_model.keras'
-
-callbacks_list = create_callbacks(
-    EARLY_STOP_PATIENCE, 
-    LR_REDUCTION_FACTOR, 
-    LR_REDUCTION_PATIENCE, 
-    CHECKPOINT_FILENAME
+history = model.fit(
+    train_ds,
+    validation_data=val_ds,
+    epochs=EPOCHS,
+    callbacks=[early_stop, checkpoint, reduce_lr]
 )
 
-# Train model
-def train_model(model, train_data, val_data, epochs, callbacks, verbose=1):
-    """Train the model."""
-    return model.fit(
-        train_data,
-        validation_data=val_data,
-        epochs=epochs,
-        callbacks=callbacks,
-        verbose=verbose
-    )
-
-history = train_model(model, train_ds, val_ds, EPOCHS, callbacks_list)
-
-# Save model
-def save_model(model, filepath):
-    """Save model to filepath."""
-    model.save(filepath)
-    print(f"Model saved successfully to {filepath}")
-    return filepath
-
 MODEL_PATH = "/content/drive/MyDrive/PlantVillage_CRNN_Model.keras"
-save_model(model, MODEL_PATH)
+model.save(MODEL_PATH)
+print("✅ Model saved successfully")
 
-# Evaluate model
-def evaluate_model(model, test_data, verbose=1):
-    """Evaluate model on test data."""
-    test_loss, test_acc = model.evaluate(test_data, verbose=verbose)
-    print(f"Test Loss: {test_loss:.4f}")
-    print(f"Test Accuracy: {test_acc*100:.2f}%")
-    return test_loss, test_acc
+test_loss, test_acc = model.evaluate(test_ds)
+print(f"🔥 Test Accuracy: {test_acc*100:.2f}%")
 
-test_loss, test_acc = evaluate_model(model, test_ds)
+y_true, y_pred = [], []
 
-# Generate predictions for confusion matrix
-def get_predictions(model, dataset):
-    y_true, y_pred = [], []
-    for batch_x, batch_y in dataset:
-        batch_preds = model.predict(batch_x, verbose=0)
-        y_true.extend(np.argmax(batch_y.numpy(), axis=1))
-        y_pred.extend(np.argmax(batch_preds, axis=1))
-    return y_true, y_pred
+for x, y in test_ds:
+    preds = model.predict(x)
+    y_true.extend(np.argmax(y.numpy(), axis=1))
+    y_pred.extend(np.argmax(preds, axis=1))
 
-y_true, y_pred = get_predictions(model, test_ds)
+cm = tf.math.confusion_matrix(y_true, y_pred)
 
-# Generate and visualize confusion matrix
-def plot_confusion_matrix(y_true, y_pred, class_names, title="Confusion Matrix"):
-    cm = tf.math.confusion_matrix(y_true, y_pred)
-    FIG_SIZE = (12, 10)
-    plt.figure(figsize=FIG_SIZE)
-    sns.heatmap(
-        cm, 
-        xticklabels=class_names, 
-        yticklabels=class_names, 
-        cmap="Blues",
-        annot=True,
-        fmt='d'
-    )
-    plt.title(f"{title} - Plant Disease Classification")
-    plt.xlabel("Predicted")
-    plt.ylabel("Actual")
-    plt.tight_layout()
-    plt.show()
-    return cm
+plt.figure(figsize=(12,10))
+sns.heatmap(cm, xticklabels=class_names, yticklabels=class_names, cmap="Blues")
+plt.title("Confusion Matrix")
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+plt.show()
 
-cm = plot_confusion_matrix(y_true, y_pred, class_names)
+from google.colab import drive
+drive.mount('/content/drive')
+
+import tensorflow as tf
+import numpy as np
+import matplotlib.pyplot as plt
+import os
 
 # =============================
-# SINGLE IMAGE PREDICTION SECTION
+# CONFIG
 # =============================
-# Note: This section is for inference on a single image
-# Remove duplicate imports if running in same session
-
-def get_prediction_config(model_path, image_path, img_size=(128, 128)):
-    """Get prediction configuration."""
-    return {
-        'model_path': model_path,
-        'image_path': image_path,
-        'img_size': img_size
-    }
-
-PREDICTION_MODEL_PATH = "/content/drive/MyDrive/PlantVillage_CRNN_Model.keras"
+MODEL_PATH = "/content/drive/MyDrive/PlantVillage_CRNN_Model.keras"
 IMAGE_PATH = "/content/drive/MyDrive/test_image/test3.png"
-PREDICTION_IMG_SIZE = (128, 128)
-pred_config = get_prediction_config(PREDICTION_MODEL_PATH, IMAGE_PATH, PREDICTION_IMG_SIZE)
+IMG_SIZE = (128, 128)
 
 # =============================
 # LOAD MODEL
 # =============================
-def load_model_for_prediction(model_path):
-    """Load model for prediction."""
-    model = tf.keras.models.load_model(model_path)
-    print(f"Model loaded successfully from {model_path}")
-    return model
-
-prediction_model = load_model_for_prediction(PREDICTION_MODEL_PATH)
+model = tf.keras.models.load_model(MODEL_PATH)
+print("✅ Model loaded successfully")
 
 # =============================
 # LOAD CLASS NAMES (IMPORTANT)
 # =============================
-PREDICTION_TRAIN_DIR = '/content/drive/MyDrive/PlantVillage_Splits/train'
-prediction_class_names = sorted(os.listdir(PREDICTION_TRAIN_DIR))
-print(f"Classes: {prediction_class_names}")
+BASE_DIR = '/content/drive/MyDrive/PlantVillage_Splits/train'
+class_names = sorted(os.listdir(BASE_DIR))
+print("Classes:", class_names)
 
 # =============================
 # LOAD & PREPROCESS IMAGE
 # =============================
-def preprocess_image(image_path, target_size):
-    img = tf.keras.preprocessing.image.load_img(image_path, target_size=target_size)
-    img_arr = tf.keras.preprocessing.image.img_to_array(img) / 255.0
-    img_arr = np.expand_dims(img_arr, axis=0)
-    return img, img_arr
+img = tf.keras.preprocessing.image.load_img(
+    IMAGE_PATH, target_size=IMG_SIZE
+)
 
-img, img_arr = preprocess_image(IMAGE_PATH, PREDICTION_IMG_SIZE)
+img_arr = tf.keras.preprocessing.image.img_to_array(img) / 255.0
+img_arr = np.expand_dims(img_arr, axis=0)
 
 # =============================
 # PREDICTION
 # =============================
-def predict_image(model, img_array, class_names, verbose=0):
-    """Predict class for image array."""
-    pred = model.predict(img_array, verbose=verbose)
-    idx = np.argmax(pred[0])
-    predicted_class = class_names[idx]
-    confidence = np.max(pred[0]) * 100
-    return predicted_class, confidence, idx
+pred = model.predict(img_arr)
+idx = np.argmax(pred[0])
 
-predicted_class, confidence, idx = predict_image(
-    prediction_model, img_arr, prediction_class_names
-)
+predicted_class = class_names[idx]
+confidence = np.max(pred[0]) * 100
 
-def get_disease_status(class_name):
-    """Determine if plant is healthy or diseased based on class name."""
-    return "HEALTHY" if "healthy" in class_name.lower() else "DISEASED"
-
-def format_prediction_output(predicted_class, status, confidence):
-    """Format prediction results for display."""
-    return {
-        'class': predicted_class,
-        'status': status,
-        'confidence': confidence
-    }
-
-status = get_disease_status(predicted_class)
-prediction_result = format_prediction_output(predicted_class, status, confidence)
+status = "HEALTHY ✅" if "healthy" in predicted_class.lower() else "DISEASED ❌"
 
 # =============================
 # SHOW RESULT
 # =============================
-def visualize_prediction(img, predicted_class, status, confidence, figsize=(8, 8)):
-    """Visualize prediction result."""
-    plt.figure(figsize=figsize)
-    plt.imshow(img)
-    plt.axis("off")
-    plt.title(f"{predicted_class}\n{status} ({confidence:.2f}%)", fontsize=12)
-    plt.tight_layout()
-    plt.show()
+plt.imshow(img)
+plt.axis("off")
+plt.title(f"{predicted_class}\n{status} ({confidence:.2f}%)")
+plt.show()
 
-def print_prediction_results(predicted_class, status, confidence):
-    """Print prediction results."""
-    print(f"Predicted Class: {predicted_class}")
-    print(f"Status: {status}")
-    print(f"Confidence: {confidence:.2f}%")
-
-visualize_prediction(img, predicted_class, status, confidence)
-print_prediction_results(predicted_class, status, confidence)
+print("Predicted Class :", predicted_class)
+print("Status          :", status)
+print(f"Confidence      : {confidence:.2f}%")
