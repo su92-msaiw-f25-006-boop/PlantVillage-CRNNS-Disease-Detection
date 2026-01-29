@@ -267,9 +267,19 @@ predicted_class = prediction_class_names[idx]
 confidence = np.max(pred[0]) * 100
 
 def get_disease_status(class_name):
+    """Determine if plant is healthy or diseased based on class name."""
     return "HEALTHY" if "healthy" in class_name.lower() else "DISEASED"
 
+def format_prediction_output(predicted_class, status, confidence):
+    """Format prediction results for display."""
+    return {
+        'class': predicted_class,
+        'status': status,
+        'confidence': confidence
+    }
+
 status = get_disease_status(predicted_class)
+prediction_result = format_prediction_output(predicted_class, status, confidence)
 
 # =============================
 # SHOW RESULT
