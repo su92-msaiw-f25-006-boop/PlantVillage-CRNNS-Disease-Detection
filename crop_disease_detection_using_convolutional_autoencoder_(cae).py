@@ -399,11 +399,20 @@ prediction_result = format_prediction_output(predicted_class, status, confidence
 # =============================
 # SHOW RESULT
 # =============================
-plt.imshow(img)
-plt.axis("off")
-plt.title(f"{predicted_class}\n{status} ({confidence:.2f}%)")
-plt.show()
+def visualize_prediction(img, predicted_class, status, confidence, figsize=(8, 8)):
+    """Visualize prediction result."""
+    plt.figure(figsize=figsize)
+    plt.imshow(img)
+    plt.axis("off")
+    plt.title(f"{predicted_class}\n{status} ({confidence:.2f}%)", fontsize=12)
+    plt.tight_layout()
+    plt.show()
 
-print("Predicted Class :", predicted_class)
-print("Status          :", status)
-print(f"Confidence      : {confidence:.2f}%")
+def print_prediction_results(predicted_class, status, confidence):
+    """Print prediction results."""
+    print(f"Predicted Class: {predicted_class}")
+    print(f"Status: {status}")
+    print(f"Confidence: {confidence:.2f}%")
+
+visualize_prediction(img, predicted_class, status, confidence)
+print_prediction_results(predicted_class, status, confidence)
