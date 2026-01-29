@@ -92,21 +92,29 @@ test_ds  = test_ds.prefetch(tf.data.AUTOTUNE)
 inputs = Input(shape=(128, 128, 3))
 
 # CNN Feature Extraction
-x = Conv2D(32, 3, activation='relu', padding='same')(inputs)
-x = BatchNormalization()(x)
-x = MaxPooling2D(2)(x)
+# Define filter sizes as constants
+FILTERS_1 = 32
+FILTERS_2 = 64
+FILTERS_3 = 128
+FILTERS_4 = 256
+KERNEL_SIZE = 3
+POOL_SIZE = 2
 
-x = Conv2D(64, 3, activation='relu', padding='same')(x)
+x = Conv2D(FILTERS_1, KERNEL_SIZE, activation='relu', padding='same')(inputs)
 x = BatchNormalization()(x)
-x = MaxPooling2D(2)(x)
+x = MaxPooling2D(POOL_SIZE)(x)
 
-x = Conv2D(128, 3, activation='relu', padding='same')(x)
+x = Conv2D(FILTERS_2, KERNEL_SIZE, activation='relu', padding='same')(x)
 x = BatchNormalization()(x)
-x = MaxPooling2D(2)(x)
+x = MaxPooling2D(POOL_SIZE)(x)
 
-x = Conv2D(256, 3, activation='relu', padding='same')(x)
+x = Conv2D(FILTERS_3, KERNEL_SIZE, activation='relu', padding='same')(x)
 x = BatchNormalization()(x)
-x = MaxPooling2D(2)(x)
+x = MaxPooling2D(POOL_SIZE)(x)
+
+x = Conv2D(FILTERS_4, KERNEL_SIZE, activation='relu', padding='same')(x)
+x = BatchNormalization()(x)
+x = MaxPooling2D(POOL_SIZE)(x)
 
 # Reshape for RNN: (batch_size, timesteps, features)
 TIMESTEPS = 8
