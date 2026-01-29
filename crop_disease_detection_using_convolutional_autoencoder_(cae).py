@@ -169,11 +169,15 @@ reduce_lr = ReduceLROnPlateau(
     patience=LR_REDUCTION_PATIENCE
 )
 
+# Train model
+callbacks_list = [early_stop, checkpoint, reduce_lr]
+
 history = model.fit(
     train_ds,
     validation_data=val_ds,
     epochs=EPOCHS,
-    callbacks=[early_stop, checkpoint, reduce_lr]
+    callbacks=callbacks_list,
+    verbose=1
 )
 
 # Save model
