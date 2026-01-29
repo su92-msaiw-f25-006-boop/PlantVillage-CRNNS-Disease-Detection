@@ -143,8 +143,12 @@ x = BatchNormalization()(x)
 x = MaxPooling2D(POOL_SIZE)(x)
 
 # Reshape for RNN: (batch_size, timesteps, features)
+def calculate_feature_dim(height, width, filters):
+    """Calculate feature dimension for reshape layer."""
+    return height * width * filters
+
 TIMESTEPS = 8
-FEATURE_DIM = 256 * 8
+FEATURE_DIM = calculate_feature_dim(8, 8, FILTERS_4)
 x = Reshape((TIMESTEPS, FEATURE_DIM))(x)
 
 # RNN Layer (GRU)
