@@ -113,7 +113,9 @@ train_ds = optimize_dataset(train_ds)
 val_ds = optimize_dataset(val_ds)
 test_ds = optimize_dataset(test_ds)
 
-inputs = Input(shape=(128, 128, 3))
+# Model input configuration
+INPUT_SHAPE = (128, 128, 3)
+inputs = Input(shape=INPUT_SHAPE)
 
 # CNN Feature Extraction
 # Define filter sizes as constants
