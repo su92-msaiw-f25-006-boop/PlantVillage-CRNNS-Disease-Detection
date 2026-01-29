@@ -266,9 +266,14 @@ def train_model(model, train_data, val_data, epochs, callbacks, verbose=1):
 history = train_model(model, train_ds, val_ds, EPOCHS, callbacks_list)
 
 # Save model
+def save_model(model, filepath):
+    """Save model to filepath."""
+    model.save(filepath)
+    print(f"Model saved successfully to {filepath}")
+    return filepath
+
 MODEL_PATH = "/content/drive/MyDrive/PlantVillage_CRNN_Model.keras"
-model.save(MODEL_PATH)
-print(f"Model saved successfully to {MODEL_PATH}")
+save_model(model, MODEL_PATH)
 
 # Evaluate model
 test_loss, test_acc = model.evaluate(test_ds, verbose=1)
